@@ -10,6 +10,7 @@ namespace LastFmTube\Json\Page;
 
 require_once dirname(__FILE__) . '/../DefaultJson.php';
 
+use Exception;
 use LastFmTube\Json\DefaultJson;
 use LastFmTube\Util\Db;
 use LastFmTube\Util\Functions;
@@ -25,6 +26,10 @@ class Page extends DefaultJson {
           die($data);
      }
 
+     /**
+      *
+      * @return array|mixed|void
+      */
      public function get() {
           switch (self::getVar('action', '')) {
                case 'init':
@@ -37,8 +42,8 @@ class Page extends DefaultJson {
                     return $this->getWebConfig();
                default:
                     $this->jsonError('invalid arguments');
+                    break;
           }
-          return array();
      }
 
      private function getWebConfig() {
@@ -81,42 +86,36 @@ class Page extends DefaultJson {
           return array(
                'TOPUSER' => array(
                     'TEXT' => $locale['menu']['topuser'],
-                    'PAGE' => 'user-container',
-                    'LDATA' => 'topuser'
+                    'PAGE' => 'userlist.topuser',
                ),
                'TOPSONGS' => array(
                     'TEXT' => $locale['menu']['topsongs'],
-                    'PAGE' => 'playlist-container',
-                    'LDATA' => 'topsongs'
+                    'PAGE' => 'playlist.topsongs'
                ),
                'LASTFM' => array(
                     'TEXT' => $locale['menu']['lastfm'],
-                    'PAGE' => 'playlist-container',
-                    'LDATA' => 'lastfm'
+                    'PAGE' => 'playlist.lastfm'
                ),
                'SEARCH' => array(
                     'TEXT' => $locale['menu']['search'],
-                    'PAGE' => 'playlist-container',
-                    'LDATA' => 'search'
+                    'PAGE' => 'playlist.search'
                ),
                'USERLIST' => array(
                     'TEXT' => $locale['menu']['userlist'],
-                    'PAGE' => 'playlist-container',
-                    'LDATA' => 'userlist'
+                    'PAGE' => 'playlist.user'
                ),
                'YTPLAYER' => array(
                     'TEXT' => $locale['menu']['youtube'],
-                    'PAGE' => 'video-container',
-                    'LDATA' => 'video'
-               ),
-               'LIVE' => array(
-                    'TEXT' => $locale['menu']['live'],
-                    'PAGE' => 'playlist-container',
-                    'LDATA' => 'topsongs'
+                    'PAGE' => 'video.youtube'
                )
           );
      }
 
+     /**
+      *
+      * @return array|int|mixed|void
+      * @throws Exception
+      */
      public function post() {
           switch (self::getVar('action', '')) {
                case 'save-trackplay':
@@ -124,12 +123,15 @@ class Page extends DefaultJson {
                case 'save-userplay':
                     return $this->saveUserPlay();
                     break;
+               default:
+                    $this->jsonError('invalid arguments');
+                    break;
           }
      }
 
      /**
       *
-      * @throws \Exception
+      * @throws Exception
       */
      private function saveTrackPlay() {
           $artist = trim($this->funcs->decodeHTML(self::getVar('artist', '', $_POST)));
@@ -146,7 +148,7 @@ class Page extends DefaultJson {
      /**
       *
       * @return array
-      * @throws \Exception
+      * @throws Exception
       */
      private function saveUserPlay() {
           $user = self::getVar('user', '', $_POST);

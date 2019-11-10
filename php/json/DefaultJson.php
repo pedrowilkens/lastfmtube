@@ -10,8 +10,8 @@ namespace LastFmTube\Json;
 
 require_once dirname(__FILE__) . '/../../vendor/autoload.php';
 
-use Exception;
 use LastFmTube\Util\Functions;
+use Exception;
 
 abstract class DefaultJson implements JsonInterface {
 
@@ -21,7 +21,7 @@ abstract class DefaultJson implements JsonInterface {
 
      private $currentMethod = 'unknown';
 
-     protected function __construct($returnOutput = false) {
+     protected function __construct() {
           $this->apiName = get_class($this);
           $this->funcs = Functions::getInstance();
           $this->funcs->startSession();
@@ -119,11 +119,14 @@ abstract class DefaultJson implements JsonInterface {
           $json['handler'] = $this->apiName;
           $json['method'] = $this->currentMethod;
           $json['data']['type'] = 'error';
-          $json['data']['value'] = $msg;
+          try {
+               $json['data']['value'] = json_decode($msg);
+          } catch (Exception $e) {
+               $json['data']['value'] = $msg;               
+          }
 
           self::setResponseHeader(500);
-          die(('handler: ' . $this->apiName . ', method: ' . $this->currentMethod . ', error: ' . $msg));
-          // return json_encode($json);
+          die(json_encode($json));
      }
 
      public static function setResponseHeader($status, $msg = false) {

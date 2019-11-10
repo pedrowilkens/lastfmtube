@@ -26,20 +26,25 @@ class Playlist extends DefaultJson {
           die($data);
      }
 
+    /**
+     * @return array|mixed|void
+     */
      function get() {
-          switch (self::getVar('list', '')) {
-               case 'playlist':
-                    return $this->getLastFm(self::getVar('user', false), self::getVar('page', 1));
-               case 'topsongs':
-                    return $this->getTopSongs(self::getVar('page', 1), self::getVar('sortby', false));
-               case 'topuser':
-                    return $this->getTopUser(self::getVar('page', 1));
-               case 'menu':
-                    return $this->getMenu();
-               default:
-                    $this->jsonError('invalid arguments');
-                    break;
-          }
+         try {
+             switch (self::getVar('list', '')) {
+                 case 'playlist':
+                     return $this->getLastFm(self::getVar('user', false), self::getVar('page', 1));
+                 case 'topsongs':
+                     return $this->getTopSongs(self::getVar('page', 1), self::getVar('sortby', false));
+                 case 'topuser':
+                     return $this->getTopUser(self::getVar('page', 1));
+                 default:
+                     $this->jsonError('invalid arguments');
+                     break;
+             }
+         } catch (Exception $err) {
+             $this->jsonError('error in get: '.$err->getMessage());
+         }
      }
 
      /**
@@ -58,10 +63,12 @@ class Playlist extends DefaultJson {
           if ($this->isValidUser($user)) {
                if (strcmp($_SESSION['music']['lastfm_user'], $user) != 0) {
                     $_SESSION['music']['lastfm_user'] = $user;
-                    $pageNum = false;
+                    $pageNum = 1;
                }
           } else if (! $this->isValidUser($_SESSION['music']['lastfm_user'])) {
                $_SESSION['music']['lastfm_user'] = $settings['general']['lastfm_defaultuser'];
+               $user = $_SESSION['music']['lastfm_user'];
+               $pageNum = 1;
           }
 
           $lfmapi->setUser($_SESSION['music']['lastfm_user']);
@@ -105,7 +112,8 @@ class Playlist extends DefaultJson {
 
           for ($cnt = 0; $cnt < sizeof($tracks); $cnt ++) {
 
-               $track = $tracks[$cnt];
+              /** @var Track $track */
+              $track = $tracks[$cnt];
                $track->normalize();
 
                $videoId = $db->query('GET_VIDEO', array(
@@ -122,7 +130,7 @@ class Playlist extends DefaultJson {
                     'LASTFM_ISPLAYING' => $track->isPlaying(),
                     'VIDEO_ID' => $videoId,
                     'PLAY_CONTROL' => false,
-                    'PLAYLIST' => 'lastfm',
+                    'PLAYLIST' => 'playlist.lastfm',
                     'PLAYSTATE' => ''
                );
           }
@@ -134,6 +142,12 @@ class Playlist extends DefaultJson {
           return (isset($user) && $user !== false && $user != null && strlen(filter_var($user, FILTER_SANITIZE_STRING)) > 0);
      }
 
+    /**
+     * @param int $pageNum
+     * @param bool $sortby
+     * @return array
+     * @throws Exception
+     */
      private function getTopSongs($pageNum = 1, $sortby = false) {
           $settings = $this->funcs->getSettings();
           $locale = $this->funcs->getLocale();
@@ -178,8 +192,7 @@ class Playlist extends DefaultJson {
                'offset' => 0
           ));
 
-          $maxpages = 0;
-          if (! is_array($topsongs)) {
+         if (! is_array($topsongs)) {
                $topsongs = array();
           }
 
@@ -226,7 +239,7 @@ class Playlist extends DefaultJson {
                     'PLAYCOUNT' => $track['playcount'],
                     'VIDEO_ID' => $videoId,
                     'PLAY_CONTROL' => false,
-                    'PLAYLIST' => 'topsongs',
+                    'PLAYLIST' => 'playlist.topsongs',
                     'PLAYSTATE' => ''
                );
                $uniqueTracks[$trackId] = $pTrack;
@@ -281,6 +294,12 @@ class Playlist extends DefaultJson {
           return $page;
      }
 
+    /**
+     * @param int $pageNum
+     * @param bool $user
+     * @return array
+     * @throws Exception
+     */
      private function getTopUser($pageNum = 1, $user = false) {
           if ($user !== false) {
                if (strcmp($_SESSION['music']['lastfm_user'], $user) != 0) {

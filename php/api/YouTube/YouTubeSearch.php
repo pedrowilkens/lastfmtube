@@ -34,8 +34,14 @@ class YouTubeSearch {
 
      private $ignoreVids = array();
 
+    /**
+     * @var Google_Client
+     */
      private $client;
 
+    /**
+     * @var Google_Service_YouTube
+     */
      private $youtube;
 
      function __construct() {
@@ -89,12 +95,13 @@ class YouTubeSearch {
           $this->needle = $needle;
      }
 
-     /**
-      *
-      * @param string $videoId
-      * @param int $limit
-      * @return VideoComments|mixed
-      */
+    /**
+     *
+     * @param string $videoId
+     * @param bool $page
+     * @param int $limit
+     * @return VideoComments|mixed
+     */
      function searchComments($videoId, $page = false, $limit = 7) {
           $this->initYTApi();
 
@@ -109,7 +116,7 @@ class YouTubeSearch {
 
           $searchResponse = $this->youtube->commentThreads->listCommentThreads('snippet,id', $args);
 
-          return new VideoComments($videoId, $searchResponse, $page, $limit);
+          return new VideoComments($videoId, $searchResponse, $page);
      }
 
      private function initYTApi() {
@@ -132,7 +139,9 @@ class YouTubeSearch {
           try {
                // Call the search.list method to retrieve results matching the specified
                // query term.
-
+              /**
+               * @var Google_Service_YouTube_SearchListResponse
+               */
                $SearchResponse = $this->youtube->search->listSearch('id,snippet', array(
                     'q' => $this->needle,
                     'maxResults' => $resultcount,
@@ -155,7 +164,7 @@ class YouTubeSearch {
                               $video->setVideoID($vid);
 
                               if (in_array($vid, $this->ignoreVids)) {
-                                   continue; // skip ignored video
+                                   continue 2; // skip ignored video
                               }
                               $video_list[] = $video;
                               break;
@@ -169,6 +178,7 @@ class YouTubeSearch {
                }
           } catch (Exception $e) {
                Functions::getInstance()->logMessage('A service error occurred: ' . $e->getMessage());
+               throw $e;
           }
 
           return $video_list;

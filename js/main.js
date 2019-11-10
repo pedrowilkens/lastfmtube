@@ -7,13 +7,17 @@
  *******************************************************************************/
 /***/
 
-// Enable navigation prompt, set to null to disable
+let $player = null;
+let $playlist = null;
+let $page = null;
+
+// Enable navigation prompt (warning before leaving page), set to null to
+// disable
 window.onbeforeunload = function() {
 	return true;
 };
 
-require([ 'Vue', 'Storages', 'player', 'page', 'playlist' ], function(Vue,
-		Storages) {
+require([ 'Vue', 'Storages', 'page' ], function(Vue, Storages) {
 
 	window.Storages = Storages;
 	window.Vue = Vue;
@@ -22,19 +26,20 @@ require([ 'Vue', 'Storages', 'player', 'page', 'playlist' ], function(Vue,
 	$playlist = new PlaylistController();
 	$page = new PageController();
 
-	$page.init();
+	$page.init(function() {
+		try {
+			require([ 'analytics' ], function(analytics) {
+				$page.analytics = analytics;
+			});
+		} catch (error) {
+			console.log('error initializing Google analytics: ', error);
+		}
 
-	$playlist.loadLastFmList(1, null, function() {
-
-		// maybe set it to page...
-		require([ 'analytics' ], function(analytics) {
-			PageController.analytics = analytics;
-		});
-
-		$player.initPlayer(function() {
+		$player.initWindow(function() {
+			HotKeys.init();
 			$player.autoPlay = true;
-			$page.initURL();
+			$page.loader.initURL();
+			$page.loader.setLoading();
 		});
-
 	});
 });
